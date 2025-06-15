@@ -106,14 +106,13 @@ export const AdminUsersPage = () => {
     }
   };
   
-  // Добавляем состояния для модального окна
+  // Обновляем состояния для модального окна
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [editForm, setEditForm] = useState({
     username: '',
     email: '',
-    role: '' as UserRole,
-    is_blocked: false
+    role: '' as UserRole
   });
 
   // Функция открытия модального окна
@@ -122,8 +121,7 @@ export const AdminUsersPage = () => {
     setEditForm({
       username: user.username,
       email: user.email,
-      role: user.role,
-      is_blocked: user.is_blocked || false
+      role: user.role
     });
     setIsModalOpen(true);
   };
@@ -138,8 +136,7 @@ export const AdminUsersPage = () => {
         .update({
           username: editForm.username,
           email: editForm.email,
-          role: editForm.role,
-          is_blocked: editForm.is_blocked
+          role: editForm.role
         })
         .eq('id', selectedUser.id);
 
@@ -158,25 +155,22 @@ export const AdminUsersPage = () => {
     }
   };
 
-  // Функция блокировки/разблокировки пользователя
-  const toggleUserBlock = async (user: UserType) => {
+  // Функция удаления пользователя
+  const deleteUser = async (user: UserType) => {
+    if (!window.confirm('Вы уверены, что хотите удалить этого пользователя?')) return;
+
     try {
-      const newBlockedStatus = !user.is_blocked;
       const { error } = await supabase
         .from('users')
-        .update({ is_blocked: newBlockedStatus })
+        .delete()
         .eq('id', user.id);
 
       if (error) throw error;
 
-      const updatedUsers = users.map(u =>
-        u.id === user.id
-          ? { ...u, is_blocked: newBlockedStatus }
-          : u
-      );
-      setUsers(updatedUsers);
+      // Обновляем список пользователей
+      setUsers(users.filter(u => u.id !== user.id));
     } catch (error: any) {
-      setError('Ошибка при изменении статуса пользователя: ' + error.message);
+      setError('Ошибка при удалении пользователя: ' + error.message);
     }
   };
 
@@ -356,21 +350,19 @@ export const AdminUsersPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="relative inline-block text-left">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => openEditModal(user)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              Редактировать
-                            </button>
-                            <button
-                              onClick={() => toggleUserBlock(user)}
-                              className={`${user.is_blocked ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}`}
-                            >
-                              {user.is_blocked ? 'Разблокировать' : 'Заблокировать'}
-                            </button>
-                          </div>
+                        <div className="flex space-x-2 justify-end">
+                          <button
+                            onClick={() => openEditModal(user)}
+                            className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-md hover:bg-blue-50"
+                          >
+                            Редактировать
+                          </button>
+                          <button
+                            onClick={() => deleteUser(user)}
+                            className="text-red-600 hover:text-red-800 px-3 py-1 rounded-md hover:bg-red-50"
+                          >
+                            Удалить
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -411,6 +403,66 @@ export const AdminUsersPage = () => {
             </div>
           </div>
         )}
+        {/* Добавляем модальное окно */}
+        {isModalOpen && selectedUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-96 max-w-lg mx-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Редактирование пользователя
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Имя пользователя
+                  </label>
+                  <Input
+                    type="text"
+                    value={editForm.username}
+                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <Input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Роль
+                  </label>
+                  <select
+                    value={editForm.role}
+                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  >
+                    <option value="user">Пользователь</option>
+                    <option value="moderator">Модератор</option>
+                    <option value="admin">Администратор</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  onClick={handleSaveChanges}
+                >
+                  Сохранить
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </Layout>
   );
