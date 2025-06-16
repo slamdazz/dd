@@ -127,29 +127,9 @@ export const AdminUsersPage = () => {
   };
 
   // Функция сохранения изменений
-  // Добавляем функцию блокировки пользователя
-  const blockUser = async (user: UserType) => {
-    if (!window.confirm('Вы уверены, что хотите заблокировать этого пользователя?')) return;
+  // Удаляем функцию blockUser, так как она больше не нужна
   
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ status: 'blocked' })
-        .eq('id', user.id);
-  
-      if (error) throw error;
-  
-      // Обновляем список пользователей
-      const updatedUsers = users.map(u => 
-        u.id === user.id ? { ...u, status: 'blocked' } : u
-      );
-      setUsers(updatedUsers);
-    } catch (error: any) {
-      setError('Ошибка при блокировке пользователя: ' + error.message);
-    }
-  };
-  
-  // Обновляем функцию handleSaveChanges для сохранения изменений
+  // Оставляем функцию handleSaveChanges без изменений (она уже сохраняет в базу)
   const handleSaveChanges = async () => {
     if (!selectedUser) return;
   
@@ -190,7 +170,7 @@ export const AdminUsersPage = () => {
     }
   };
 
-  // Функция удаления пользователя
+  // Оставляем функцию deleteUser без изменений (она уже удаляет из базы)
   const deleteUser = async (user: UserType) => {
     if (!window.confirm('Вы уверены, что хотите удалить этого пользователя?')) return;
   
@@ -399,12 +379,6 @@ export const AdminUsersPage = () => {
                             className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-md hover:bg-blue-50"
                           >
                             Редактировать
-                          </button>
-                          <button
-                            onClick={() => blockUser(user)}
-                            className="text-yellow-600 hover:text-yellow-800 px-3 py-1 rounded-md hover:bg-yellow-50"
-                          >
-                            Заблокировать
                           </button>
                           <button
                             onClick={() => deleteUser(user)}
