@@ -129,19 +129,29 @@ export const AdminUsersPage = () => {
   // Функция сохранения изменений
   const handleSaveChanges = async () => {
     if (!selectedUser) return;
-
+  
     try {
-      const { error } = await supabase
+      // Обновляем данные пользователя в auth.users
+      const { error: authError } = await supabase.auth.admin.updateUserById(
+        selectedUser.id,
+        {
+          email: editForm.email,
+          user_metadata: { username: editForm.username }
+        }
+      );
+  
+      if (authError) throw authError;
+  
+      // Обновляем роль пользователя в public.users
+      const { error: dbError } = await supabase
         .from('users')
         .update({
-          username: editForm.username,
-          email: editForm.email,
           role: editForm.role
         })
         .eq('id', selectedUser.id);
-
-      if (error) throw error;
-
+  
+      if (dbError) throw dbError;
+  
       // Обновляем список пользователей
       const updatedUsers = users.map(user =>
         user.id === selectedUser.id
@@ -158,15 +168,23 @@ export const AdminUsersPage = () => {
   // Функция удаления пользователя
   const deleteUser = async (user: UserType) => {
     if (!window.confirm('Вы уверены, что хотите удалить этого пользователя?')) return;
-
+  
     try {
-      const { error } = await supabase
+      // Удаляем пользователя из auth.users
+      const { error: authError } = await supabase.auth.admin.deleteUser(
+        user.id
+      );
+  
+      if (authError) throw authError;
+  
+      // Удаляем данные пользователя из public.users
+      const { error: dbError } = await supabase
         .from('users')
         .delete()
         .eq('id', user.id);
-
-      if (error) throw error;
-
+  
+      if (dbError) throw dbError;
+  
       // Обновляем список пользователей
       setUsers(users.filter(u => u.id !== user.id));
     } catch (error: any) {
